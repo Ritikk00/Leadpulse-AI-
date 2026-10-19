@@ -1,0 +1,19 @@
+{
+  "name": "ai-lead-management-starter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A configurable MERN starter for capturing and managing business leads.",
+  "workspaces": ["client", "server"],
+  "scripts": {
+    "dev": "concurrently -n server,client -c cyan,green \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "npm --workspace server run dev",
+    "dev:client": "npm --workspace client run dev",
+    "seed": "npm --workspace server run seed",
+    "build": "npm --workspace client run build",
+    "lint": "npm --workspace client run lint && npm --workspace server run lint",
+    "test": "npm --workspace server test"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

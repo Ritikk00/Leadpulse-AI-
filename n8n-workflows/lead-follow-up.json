@@ -1,0 +1,47 @@
+{
+  "name": "AI Lead Starter - Lead Follow-up",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-lead-starter-follow-up",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-360, 0],
+      "id": "d9320bb8-88ad-4e9e-bd73-990218a10001",
+      "name": "Follow-up request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.LEAD_API_URL }}/api/webhooks/follow-up",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-webhook-secret", "value": "={{ $env.WEBHOOK_SECRET }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ leadId: $json.body.leadId, message: $json.body.message }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-70, 0],
+      "id": "d9320bb8-88ad-4e9e-bd73-990218a10002",
+      "name": "Send follow-up email"
+    }
+  ],
+  "connections": {
+    "Follow-up request": { "main": [[{ "node": "Send follow-up email", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "d9320bb8-88ad-4e9e-bd73-990218a10091",
+  "meta": { "templateCredsSetupCompleted": false },
+  "tags": []
+}

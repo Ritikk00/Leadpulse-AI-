@@ -1,0 +1,47 @@
+{
+  "name": "AI Lead Starter - AI Qualification",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-lead-starter-qualify",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-360, 0],
+      "id": "f45a552d-c275-495f-8bda-0043f6d10001",
+      "name": "Qualification request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.LEAD_API_URL }}/api/webhooks/lead-analyze",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-webhook-secret", "value": "={{ $env.WEBHOOK_SECRET }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ leadId: $json.body.leadId }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-70, 0],
+      "id": "f45a552d-c275-495f-8bda-0043f6d10002",
+      "name": "Qualify lead with AI"
+    }
+  ],
+  "connections": {
+    "Qualification request": { "main": [[{ "node": "Qualify lead with AI", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "f45a552d-c275-495f-8bda-0043f6d10091",
+  "meta": { "templateCredsSetupCompleted": false },
+  "tags": []
+}

@@ -1,0 +1,63 @@
+{
+  "name": "AI Lead Starter - New Lead Notification",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-lead-starter-new-lead",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-460, 0],
+      "id": "7b1f21ee-27f8-4b06-a112-61f5b5310001",
+      "name": "New lead source"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.LEAD_API_URL }}/api/webhooks/leads",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-webhook-secret", "value": "={{ $env.WEBHOOK_SECRET }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-170, 0],
+      "id": "7b1f21ee-27f8-4b06-a112-61f5b5310002",
+      "name": "Create lead in Signal Desk"
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.SMTP_FROM }}",
+        "toEmail": "={{ $env.ADMIN_NOTIFICATION_EMAIL }}",
+        "subject": "={{ 'New lead: ' + $json.data.lead.name }}",
+        "emailFormat": "text",
+        "text": "={{ $json.data.lead.name + ' (' + $json.data.lead.email + ') submitted a request.\\n\\n' + $json.data.lead.requirement }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [120, 0],
+      "id": "7b1f21ee-27f8-4b06-a112-61f5b5310003",
+      "name": "Email workspace owner"
+    }
+  ],
+  "connections": {
+    "New lead source": { "main": [[{ "node": "Create lead in Signal Desk", "type": "main", "index": 0 }]] },
+    "Create lead in Signal Desk": { "main": [[{ "node": "Email workspace owner", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "7b1f21ee-27f8-4b06-a112-61f5b5310091",
+  "meta": { "templateCredsSetupCompleted": false },
+  "tags": []
+}
