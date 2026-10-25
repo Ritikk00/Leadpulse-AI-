@@ -16,8 +16,16 @@ const app = express();
 app.disable('x-powered-by');
 app.locals.databaseInitialized = true;
 app.use(helmet());
-const allowedOrigins = (env.CORS_ORIGINS || env.CLIENT_URL).split(',').map((origin) => origin.trim()).filter(Boolean);
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+app.use(cors({
+  origin(origin, callback) {
+    const localOrigin = /^http:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/.test(origin || '');
+    const allowedOrigins = [...new Set([...env.CORS_ORIGINS.split(','), env.CLIENT_URL]
+      .map((allowedOrigin) => allowedOrigin.trim().replace(/\/$/, ''))
+      .filter(Boolean))];
+    callback(null, !origin || localOrigin || allowedOrigins.includes(origin.replace(/\/$/, '')));
+  },
+  credentials: true
+}));
 app.use(express.json({ limit: '32kb' }));
 app.use(cookieParser());
 app.use((req, res, next) => {

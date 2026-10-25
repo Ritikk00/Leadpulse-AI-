@@ -53,14 +53,21 @@ export function LeadDetail() {
     event.preventDefault();
     setBusy(true);
     setError(null);
-    setError(null);
+    const previousLead = lead;
+    if (form.status === 'CONTACTED' && lead.status !== 'CONTACTED') {
+      setLead((current) => ({ ...current, status: 'CONTACTED' }));
+    }
     try {
       const { data } = await api.patch(`/leads/${id}`, { name: form.name, email: form.email || '', phone: form.phone, source: form.source, requirement: form.requirement, timeline: form.timeline, status: form.status, priority: form.priority });
       setLead(data.data.lead);
       setEditing(false);
       setNotice('Lead changes saved.');
       await load();
-    } catch (requestError) { setError(requestError); }
+    } catch (requestError) {
+      setLead(previousLead);
+      setError(requestError);
+      notifications.error(requestError.response?.data?.message || 'Lead changes could not be saved.');
+    }
     finally { setBusy(false); }
   }
 
@@ -126,14 +133,17 @@ export function LeadDetail() {
   }
 
   async function markContacted() {
+    const previousLead = lead;
     setStatusUpdating(true);
+    setLead((current) => ({ ...current, status: 'CONTACTED' }));
     try {
       const { data } = await api.patch(`/leads/${id}`, { status: 'CONTACTED' });
       setLead(data.data.lead);
       setShowContactedSuggestion(false);
-      await load();
+      load();
       notifications.success('Lead status changed to Contacted.');
     } catch (requestError) {
+      setLead(previousLead);
       notifications.error(requestError.response?.data?.message || 'Lead status could not be changed.');
     } finally { setStatusUpdating(false); }
   }

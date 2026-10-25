@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, CircleHelp, Clock3, Download, Flame, MessageCircle, RefreshCw, Sparkles, UsersRound } from 'lucide-react';
 import { api } from '../api';
+import { useAuth } from '../auth/useAuth';
 import { EmptyState, PageHeader, PriorityBadge, StatusBadge } from '../components/ui';
+import { useToast } from '../components/useToast';
 import { formatWhatsAppPhone, openLeadWhatsApp } from '../utils/whatsapp';
 
 const money = new Intl.NumberFormat('en-US');
@@ -11,6 +13,8 @@ function Metric({ label, value, icon: Icon, tone, detail }) {
 }
 
 export function Dashboard() {
+  const { user } = useAuth();
+  const notifications = useToast();
   const [data, setData] = useState(null);
   const [activityLeads, setActivityLeads] = useState(null);
   const [tableLeads, setTableLeads] = useState([]);
@@ -51,6 +55,48 @@ export function Dashboard() {
   }, [leadFilter, leadPage, leadReload]);
 
   useEffect(() => {
+    if (user?.role !== 'admin') return undefined;
+    let active = true;
+    let polling = false;
+    let since = new Date().toISOString();
+    const seenUpdateIds = new Set();
+    const pollStatusUpdates = async () => {
+      if (polling) return;
+      polling = true;
+      const checkedAt = new Date().toISOString();
+      try {
+        const { data: response } = await api.get('/leads/status-updates', { params: { since } });
+        if (!active) return;
+        since = checkedAt;
+        const updates = response.data.updates.filter((update) => !seenUpdateIds.has(update.id));
+        for (const update of updates) {
+          seenUpdateIds.add(update.id);
+          if (seenUpdateIds.size > 500) seenUpdateIds.delete(seenUpdateIds.values().next().value);
+        }
+        if (!updates.length) return;
+        const updatedIds = new Set(updates.map((update) => update.leadId));
+        setTableLeads((current) => current.map((lead) => updatedIds.has(lead._id) ? { ...lead, status: 'CONTACTED' } : lead));
+        setActivityLeads((current) => current?.map((lead) => updatedIds.has(lead._id) ? { ...lead, status: 'CONTACTED' } : lead));
+        notifications.info(updates.map((update) => `${update.leadName} was marked Contacted by ${update.actorName}.`).join(' '));
+        setLeadReload((current) => current + 1);
+        try {
+          const { data: dashboardResponse } = await api.get('/dashboard');
+          if (active) setData(dashboardResponse.data);
+        } catch (requestError) {
+          if (active) setError(requestError.response?.data?.message || 'Dashboard could not be refreshed.');
+        }
+      } catch (requestError) {
+        if (active) setLeadListError(requestError.response?.data?.message || 'Lead status updates could not be refreshed.');
+      } finally {
+        polling = false;
+      }
+    };
+    pollStatusUpdates();
+    const interval = window.setInterval(pollStatusUpdates, 15000);
+    return () => { active = false; window.clearInterval(interval); };
+  }, [notifications, user?.role]);
+
+  useEffect(() => {
     let active = true;
     const previousUpdates = new Map();
     const recentlyUpdated = new Map();
@@ -67,7 +113,9 @@ export function Dashboard() {
         for (const [id, changedAt] of recentlyUpdated) if (Date.now() - changedAt > 30 * 60 * 1000) recentlyUpdated.delete(id);
         setUpdatedLeadIds([...recentlyUpdated.keys()]);
         setActivityLeads([...leads].sort((left, right) => new Date(right.updatedAt) - new Date(left.updatedAt)).slice(0, 6));
-      } catch {}
+      } catch (requestError) {
+        if (active) setLeadListError(requestError.response?.data?.message || 'Recent lead activity could not be refreshed.');
+      }
     };
     refreshActivity();
     const interval = window.setInterval(refreshActivity, 20000);

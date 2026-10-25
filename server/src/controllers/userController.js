@@ -18,18 +18,9 @@ export async function createEmployee(req, res) {
   const { name, email, temporaryPassword } = req.validatedBody;
   if (await User.exists({ email })) throw new AppError(409, 'An account with this email already exists.');
   const employee = await User.create({ name, email, role: 'employee', passwordHash: await bcrypt.hash(temporaryPassword, 12) });
-  let delivery;
-  try {
-    delivery = await sendEmployeeWelcome(employee, temporaryPassword);
-  } catch (error) {
-    console.error('Employee welcome email failed:', error.message);
-    delivery = { sent: false, reason: 'Welcome email could not be sent.' };
-  }
-  res.status(201).json({ success: true, data: {
-    employee: { id: String(employee._id), name: employee.name, email: employee.email, role: employee.role, createdAt: employee.createdAt },
-    delivery,
-    ...(!delivery.sent ? { credentials: { email: employee.email, temporaryPassword }, notice: 'Share these credentials with the employee securely.' } : {})
-  } });
+  const newEmployee = { id: String(employee._id), name: employee.name, email: employee.email, role: employee.role, createdAt: employee.createdAt };
+  res.status(201).json({ success: true, data: { employee: newEmployee } });
+  sendEmployeeWelcome(employee, temporaryPassword).catch((error) => console.error('Email failed:', error));
 }
 
 export async function deleteEmployee(req, res) {

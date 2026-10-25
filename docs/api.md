@@ -29,6 +29,7 @@ Base path: `/api`. JSON success responses use `{ "success": true, "data": ... }`
 | `GET` | `/leads/:id` | Access token | Lead plus latest 100 activity events |
 | `PATCH` | `/leads/:id` | Access token | Update allowed lead fields/status/priority |
 | `PATCH` | `/leads/:id/assign` | Admin | Assign a lead to an employee or pass `employeeId: null` to unassign |
+| `GET` | `/leads/status-updates?since=<ISO timestamp>` | Admin | Poll employee status changes to Contacted |
 | `DELETE` | `/leads/:id` | Admin | Delete lead and history |
 | `POST` | `/leads/:id/analyze` | Access token | Call configured AI provider and validate result |
 | `POST` | `/leads/:id/activities` | Access token | Add an activity note |
@@ -38,6 +39,7 @@ Base path: `/api`. JSON success responses use `{ "success": true, "data": ... }`
 | `PATCH` | `/settings` | Access token | Update personal email notification preferences |
 | `PUT` | `/settings` | Admin | Enable or disable workspace round-robin auto-assignment with `{ "autoAssign": true|false }` |
 | `GET` | `/users/employees` | Admin | List employee IDs, names, and emails |
+| `POST` | `/users/employees` | Admin | Create an employee and dispatch the welcome email in the background |
 | `PATCH` | `/profile` | Access token | Update name or password |
 | `GET` | `/health` | Public | API health response |
 

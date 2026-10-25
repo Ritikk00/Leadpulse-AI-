@@ -2,7 +2,7 @@
 
 ## Brand and public form
 
-Replace the Signal Desk name, colors, type choices, and public inquiry copy in `client/src/styles.css` and `client/src/pages/Landing.jsx`. Update `intakeSchema` and the matching server `leadInputSchema` together when adding or changing public lead fields. Keep server validation authoritative. The universal inquiry payload is name, phone, optional email, requirement, and timeline.
+Update the LeadPulse AI colors, type choices, and public inquiry copy in `client/src/styles.css` and `client/src/pages/Landing.jsx`. Outgoing application emails use the LeadPulse AI sender name. Update `intakeSchema` and the matching server `leadInputSchema` together when adding or changing public lead fields. Keep server validation authoritative. The universal inquiry payload is name, phone, optional email, requirement, and timeline.
 
 ## Pipeline
 

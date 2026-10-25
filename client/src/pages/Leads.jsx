@@ -24,15 +24,23 @@ export function Leads() {
   const [awaitingActionCount, setAwaitingActionCount] = useState(0);
 
   useEffect(() => {
-    api.get('/leads/meta').then(({ data }) => setSources(data.data.sources)).catch(() => {});
-  }, []);
+    api.get('/leads/meta').then(({ data }) => setSources(data.data.sources)).catch((requestError) => {
+      const message = requestError.response?.data?.message || 'Lead options could not be loaded.';
+      setError(message);
+      notifications.error(message);
+    });
+  }, [notifications]);
 
   useEffect(() => {
     if (user?.role !== 'admin') return;
     api.get('/users/employees')
       .then(({ data }) => setEmployees(data.data.employees))
-      .catch((requestError) => setError(requestError.response?.data?.message || 'Employees could not be loaded.'));
-  }, [user?.role]);
+      .catch((requestError) => {
+        const message = requestError.response?.data?.message || 'Employees could not be loaded.';
+        setError(message);
+        notifications.error(message);
+      });
+  }, [notifications, user?.role]);
 
   useEffect(() => {
     let active = true;
@@ -43,10 +51,16 @@ export function Leads() {
         setSources((previous) => [...new Set([...previous, ...data.data.leads.map((lead) => lead.source).filter(Boolean)])]);
         setError('');
       })
-      .catch((requestError) => { if (active) setError(requestError.response?.data?.message || 'Leads could not be loaded.'); })
+      .catch((requestError) => {
+        if (active) {
+          const message = requestError.response?.data?.message || 'Leads could not be loaded.';
+          setError(message);
+          notifications.error(message);
+        }
+      })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [filters, page]);
+  }, [filters, notifications, page]);
 
   useEffect(() => {
     if (user?.role !== 'employee') return undefined;
@@ -71,7 +85,9 @@ export function Leads() {
         previousIds = currentIds;
         initialized = true;
         window.localStorage.setItem(storageKey, JSON.stringify([...currentIds]));
-      } catch {}
+      } catch (requestError) {
+        if (active) setError(requestError.response?.data?.message || 'Assigned leads could not be refreshed.');
+      }
     };
     pollAssignments();
     const interval = window.setInterval(pollAssignments, 20000);
@@ -87,14 +103,20 @@ export function Leads() {
   async function changeStatus(lead, status) {
     setUpdatingId(lead._id);
     setError('');
+    setResult((current) => ({ ...current, leads: current.leads.map((item) => item._id === lead._id ? { ...item, status } : item) }));
     try {
-      await api.patch(`/leads/${lead._id}`, { status });
+      const { data } = await api.patch(`/leads/${lead._id}`, { status });
       if (filters.status && filters.status !== status) {
         setResult((current) => ({ ...current, leads: current.leads.filter((item) => item._id !== lead._id), pagination: { ...current.pagination, total: Math.max(0, current.pagination.total - 1) } }));
       } else {
-        setResult((current) => ({ ...current, leads: current.leads.map((item) => item._id === lead._id ? { ...item, status } : item) }));
+        setResult((current) => ({ ...current, leads: current.leads.map((item) => item._id === lead._id ? data.data.lead : item) }));
       }
-    } catch (requestError) { setError(requestError.response?.data?.message || 'Status could not be changed.'); }
+    } catch (requestError) {
+      setResult((current) => ({ ...current, leads: current.leads.map((item) => item._id === lead._id ? { ...item, status: lead.status } : item) }));
+      const message = requestError.response?.data?.message || 'Status could not be changed.';
+      setError(message);
+      notifications.error(message);
+    }
     finally { setUpdatingId(''); }
   }
 
@@ -106,7 +128,11 @@ export function Leads() {
       setResult((current) => ({ ...current, leads: current.leads.map((item) => item._id === lead._id ? { ...item, assignedTo: data.data.lead.assignedTo } : item) }));
       const employee = employees.find((item) => item.id === employeeId);
       notifications.success(employee ? `Lead successfully assigned to ${employee.name}!` : 'Lead returned to the unassigned pool.');
-    } catch (requestError) { setError(requestError.response?.data?.message || 'Lead assignment could not be changed.'); }
+    } catch (requestError) {
+      const message = requestError.response?.data?.message || 'Lead assignment could not be changed.';
+      setError(message);
+      notifications.error(message);
+    }
     finally { setUpdatingId(''); }
   }
 

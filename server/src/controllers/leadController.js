@@ -200,6 +200,25 @@ export async function getLead(req, res) {
   res.json({ success: true, data: { lead, activities } });
 }
 
+export async function leadStatusUpdates(req, res) {
+  const updates = await LeadActivity.find({
+    type: 'status_changed',
+    createdAt: { $gt: req.validatedQuery.since },
+    'metadata.to': 'CONTACTED'
+  })
+    .sort({ createdAt: 1 })
+    .limit(100)
+    .populate({ path: 'actor', select: 'name role', match: { role: 'employee' } })
+    .populate('lead', 'name');
+  res.json({ success: true, data: { updates: updates.filter((update) => update.actor && update.lead).map((update) => ({
+    id: String(update._id),
+    leadId: String(update.lead._id),
+    leadName: update.lead.name,
+    actorName: update.actor.name,
+    createdAt: update.createdAt
+  })) } });
+}
+
 export async function updateLead(req, res) {
   const lead = await Lead.findOne(leadQuery(req.user, req.params.id));
   if (!lead) throw new AppError(404, 'Lead not found.');

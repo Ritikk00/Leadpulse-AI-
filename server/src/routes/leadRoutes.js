@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
-import { addLeadNote, addWhatsAppActivity, analyzeLeadById, assignLead, createLead, deleteLead, getLead, inquireLead, leadMetadata, listLeads, trackLead, updateLead } from '../controllers/leadController.js';
+import { addLeadNote, addWhatsAppActivity, analyzeLeadById, assignLead, createLead, deleteLead, getLead, inquireLead, leadMetadata, leadStatusUpdates, listLeads, trackLead, updateLead } from '../controllers/leadController.js';
 import { requireAdmin, requireAuth, requireRole } from '../middleware/auth.js';
 import { validate, validateQuery } from '../middleware/validate.js';
 import { leadAssignmentSchema, leadInputSchema, leadUpdateSchema, trackingQuerySchema } from '../utils/validation.js';
@@ -26,6 +26,7 @@ router.get('/meta', leadMetadata);
 router.get('/', listLeads);
 router.post('/', validate(leadInputSchema), createLead);
 router.patch('/:id/assign', requireAdmin, validate(leadAssignmentSchema), assignLead);
+router.get('/status-updates', requireAdmin, validateQuery(z.object({ since: z.coerce.date() })), leadStatusUpdates);
 router.get('/:id', getLead);
 router.patch('/:id', validate(leadUpdateSchema), updateLead);
 router.delete('/:id', requireRole('admin'), deleteLead);

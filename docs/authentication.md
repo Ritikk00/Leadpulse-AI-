@@ -24,7 +24,7 @@ Admins can access all leads and assign leads to employees. Employees can access 
 - `PATCH /api/leads/:id/assign`: admin-only assignment; send `{ "employeeId": "..." }` or `{ "employeeId": null }` to unassign.
 - `GET /api/leads/track?reference=...`: rate-limited public tracking. Public intake returns the reference once and stores only its SHA-256 hash. Tracking responses contain only customer-facing name, requirement, status, and timestamps.
 
-Auth endpoints have a per-process rate limit. For multi-instance production, use a shared rate-limit store. CORS allows exactly `CLIENT_URL` with credentials; do not use wildcard origins with cookies.
+Auth endpoints have a per-process rate limit. For multi-instance production, use a shared rate-limit store. CORS allows `CLIENT_URL`, any origins listed in `CORS_ORIGINS`, and localhost development origins with credentials; do not use wildcard origins with cookies.
 
 ## Production checklist
 

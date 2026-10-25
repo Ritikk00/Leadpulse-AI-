@@ -33,15 +33,15 @@
       "typeVersion": 4.2,
       "position": [-170, 0],
       "id": "7b1f21ee-27f8-4b06-a112-61f5b5310002",
-      "name": "Create lead in Signal Desk"
+      "name": "Create lead in LeadPulse AI"
     },
     {
       "parameters": {
-        "fromEmail": "={{ $env.SMTP_FROM }}",
+        "fromEmail": "={{ '\"LeadPulse AI\" <' + $env.SMTP_FROM + '>' }}",
         "toEmail": "={{ $env.ADMIN_NOTIFICATION_EMAIL }}",
-        "subject": "={{ 'New lead: ' + $json.data.lead.name }}",
+        "subject": "={{ 'LeadPulse AI | New lead: ' + $json.data.lead.name }}",
         "emailFormat": "text",
-        "text": "={{ $json.data.lead.name + ' (' + $json.data.lead.email + ') submitted a request.\\n\\n' + $json.data.lead.requirement }}",
+        "text": "={{ 'LeadPulse AI\\n\\n' + $json.data.lead.name + ' (' + $json.data.lead.email + ') submitted a request.\\n\\n' + $json.data.lead.requirement + '\\n\\n-- LeadPulse AI' }}",
         "options": {}
       },
       "type": "n8n-nodes-base.emailSend",
@@ -52,8 +52,8 @@
     }
   ],
   "connections": {
-    "New lead source": { "main": [[{ "node": "Create lead in Signal Desk", "type": "main", "index": 0 }]] },
-    "Create lead in Signal Desk": { "main": [[{ "node": "Email workspace owner", "type": "main", "index": 0 }]] }
+    "New lead source": { "main": [[{ "node": "Create lead in LeadPulse AI", "type": "main", "index": 0 }]] },
+    "Create lead in LeadPulse AI": { "main": [[{ "node": "Email workspace owner", "type": "main", "index": 0 }]] }
   },
   "active": false,
   "settings": { "executionOrder": "v1" },

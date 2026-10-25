@@ -39,6 +39,28 @@ test('health endpoint responds with the API status', async () => {
   assert.equal(response.body.data.status, 'ok');
 });
 
+test('CORS accepts configured frontend origins and localhost development origins', async () => {
+  const originalClientUrl = env.CLIENT_URL;
+  const originalCorsOrigins = env.CORS_ORIGINS;
+  env.CLIENT_URL = 'https://frontend.example';
+  env.CORS_ORIGINS = 'https://app.example';
+  try {
+    const [client, configured, localhost, rejected] = await Promise.all([
+      request(app).get('/api/health').set('Origin', env.CLIENT_URL),
+      request(app).get('/api/health').set('Origin', 'https://app.example'),
+      request(app).get('/api/health').set('Origin', 'http://localhost:5173'),
+      request(app).get('/api/health').set('Origin', 'https://unlisted.example')
+    ]);
+    assert.equal(client.headers['access-control-allow-origin'], env.CLIENT_URL);
+    assert.equal(configured.headers['access-control-allow-origin'], 'https://app.example');
+    assert.equal(localhost.headers['access-control-allow-origin'], 'http://localhost:5173');
+    assert.equal(rejected.headers['access-control-allow-origin'], undefined);
+  } finally {
+    env.CLIENT_URL = originalClientUrl;
+    env.CORS_ORIGINS = originalCorsOrigins;
+  }
+});
+
 test('API stays reachable while database initialization is pending', async () => {
   const originalInitialized = app.locals.databaseInitialized;
   try {
@@ -207,8 +229,9 @@ test('Mongo-backed account and lead lifecycle', { skip: !process.env.MONGO_TEST_
   const secondAccount = await request(app).post('/api/users/employees').set('Authorization', `Bearer ${refreshedToken}`).send({ name: 'Second Employee', email: 'second@example.test', temporaryPassword: 'TestPassword!42' });
   assert.equal(secondAccount.status, 201);
   assert.equal(secondAccount.body.data.employee.role, 'employee');
-  assert.equal(secondAccount.body.data.delivery.sent, false);
-  assert.equal(secondAccount.body.data.credentials.temporaryPassword, 'TestPassword!42');
+  assert.equal(secondAccount.body.data.employee.email, 'second@example.test');
+  assert.equal('delivery' in secondAccount.body.data, false);
+  assert.equal('credentials' in secondAccount.body.data, false);
   const secondToken = (await request(app).post('/api/auth/login').send({ email: 'second@example.test', password: 'TestPassword!42' })).body.data.accessToken;
   const employeeId = secondAccount.body.data.employee.id;
   assert.equal((await request(app).get(`/api/leads/${leadId}`).set('Authorization', `Bearer ${secondToken}`)).status, 404);
@@ -228,6 +251,14 @@ test('Mongo-backed account and lead lifecycle', { skip: !process.env.MONGO_TEST_
   assert.equal(assignment.status, 200);
   assert.equal(assignment.body.data.lead.assignedTo._id, employeeId);
   assert.equal((await request(app).get(`/api/leads/${leadId}`).set('Authorization', `Bearer ${secondToken}`)).status, 200);
+  const statusUpdatesSince = new Date(Date.now() - 1000).toISOString();
+  const employeeStatusUpdate = await request(app).patch(`/api/leads/${leadId}`).set('Authorization', `Bearer ${secondToken}`).send({ status: 'CONTACTED' });
+  assert.equal(employeeStatusUpdate.status, 200);
+  assert.equal(employeeStatusUpdate.body.data.lead.status, 'CONTACTED');
+  const statusUpdates = await request(app).get('/api/leads/status-updates').query({ since: statusUpdatesSince }).set('Authorization', `Bearer ${refreshedToken}`);
+  assert.equal(statusUpdates.status, 200);
+  assert.ok(statusUpdates.body.data.updates.some((update) => update.leadId === leadId && update.actorName === 'Second Employee'));
+  assert.equal((await request(app).get('/api/leads/status-updates').query({ since: statusUpdatesSince }).set('Authorization', `Bearer ${secondToken}`)).status, 403);
   const employeeWhatsAppActivity = await request(app).post(`/api/leads/${leadId}/whatsapp`).set('Authorization', `Bearer ${secondToken}`);
   assert.equal(employeeWhatsAppActivity.status, 201);
   assert.equal(employeeWhatsAppActivity.body.data.activity.actor.name, 'Second Employee');

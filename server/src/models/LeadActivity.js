@@ -9,5 +9,6 @@ const leadActivitySchema = new mongoose.Schema({
 }, { timestamps: true });
 
 leadActivitySchema.index({ lead: 1, createdAt: -1 });
+leadActivitySchema.index({ type: 1, createdAt: -1 });
 
 export default mongoose.model('LeadActivity', leadActivitySchema);

@@ -8,6 +8,7 @@ The API loads `server/.env` via dotenv. The root `.env.example` mirrors the serv
 | `PORT` | No | Express port; defaults to `5000`. Keep the Vite proxy target in `client/vite.config.js` aligned if you change it. |
 | `MONGO_URI` | Yes for API | MongoDB connection URI. |
 | `CLIENT_URL` | Yes for browser auth | Exact allowed frontend origin, including scheme and port. Defaults to local Vite. |
+| `CORS_ORIGINS` | No | Comma-separated additional frontend origins; `CLIENT_URL` is also allowed automatically, as are localhost development origins. |
 | `JWT_ACCESS_SECRET` | Yes | Random secret, minimum 32 characters. Keep separate from refresh secret. |
 | `JWT_REFRESH_SECRET` | Yes | Separate random secret, minimum 32 characters. |
 | `ACCESS_TOKEN_TTL` | No | JWT duration, defaults to `15m`. |
@@ -16,7 +17,7 @@ The API loads `server/.env` via dotenv. The root `.env.example` mirrors the serv
 | `SMTP_HOST` | Only for email | SMTP hostname. |
 | `SMTP_PORT` | Only for email | SMTP port; defaults to `587` (STARTTLS). Port `465` enables TLS directly. |
 | `SMTP_USER` / `SMTP_PASSWORD` | Only for email | SMTP account credentials. |
-| `SMTP_FROM` | Only for email | Verified sender address. |
+| `SMTP_FROM` | Only for email | Verified sender mailbox address. Outgoing app email is displayed as `"LeadPulse AI" <SMTP_FROM>`. |
 | `ADMIN_NOTIFICATION_EMAIL` | Only for admin alerts | Inbox for new-lead notification. |
 | `LEAD_ACKNOWLEDGEMENT_ENABLED` | No | Environment fallback for public intake acknowledgement, defaults to `false`. Workspace settings can override it. |
 | `WEBHOOK_SECRET` | Required in production for n8n | Shared secret checked using `x-webhook-secret`; required by middleware in production. |
