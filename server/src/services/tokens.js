@@ -7,7 +7,7 @@ export function hashToken(token) {
 }
 
 export function createAccessToken(user) {
-  return jwt.sign({ role: user.role, tokenVersion: user.tokenVersion || 0 }, env.JWT_ACCESS_SECRET, {
+  return jwt.sign({ id: user.id, role: user.role, email: user.email, tokenVersion: user.tokenVersion || 0 }, env.JWT_ACCESS_SECRET, {
     subject: user.id,
     issuer: 'ai-lead-starter',
     expiresIn: env.ACCESS_TOKEN_TTL
@@ -15,7 +15,7 @@ export function createAccessToken(user) {
 }
 
 export function createRefreshToken(user) {
-  return jwt.sign({ role: user.role, type: 'refresh', nonce: randomUUID() }, env.JWT_REFRESH_SECRET, {
+  return jwt.sign({ id: user.id, role: user.role, email: user.email, type: 'refresh', nonce: randomUUID() }, env.JWT_REFRESH_SECRET, {
     subject: user.id,
     issuer: 'ai-lead-starter',
     expiresIn: env.REFRESH_TOKEN_TTL

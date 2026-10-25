@@ -2,7 +2,7 @@
 
 ## Session design
 
-Passwords are hashed with bcryptjs at cost 12. Successful registration/login returns a short-lived signed access token in JSON and an independently signed refresh JWT in a `refreshToken` cookie. The refresh JWT itself is stored in MongoDB only as a SHA-256 digest. The cookie is `httpOnly`, `sameSite=strict`, scoped to `/api/auth`, and marked `secure` in production. The browser keeps the access token in memory only; it is not stored in localStorage.
+Passwords are hashed with bcryptjs at cost 12. Successful registration/login returns a short-lived signed access token in JSON and an independently signed refresh JWT in a `refreshToken` cookie. The refresh JWT itself is stored in MongoDB only as a SHA-256 digest. The cookie is `httpOnly`, scoped to `/api/auth`, and marked `secure` in production. The browser stores the access token and public user profile in per-tab `sessionStorage`, preventing one tab's admin/employee login from overwriting another tab's identity. The API verifies access-token user ID, role, email, and token version against the current database record.
 
 The API uses one active refresh-token hash per user, so a new login replaces that user's prior refresh session. The refresh session has a fixed 15-day expiry; successful refresh requests issue a new access token without extending the refresh-cookie expiry. Access tokens carry a token version that is advanced on login, logout, password reset, and refresh-token replay detection, revoking older access tokens without storing them.
 

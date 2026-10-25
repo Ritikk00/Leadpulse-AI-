@@ -4,7 +4,7 @@ import { AuthContext } from './authContext';
 
 function readStoredUser() {
   try {
-    const user = JSON.parse(window.localStorage.getItem('user') || 'null');
+    const user = JSON.parse(window.sessionStorage.getItem('user') || 'null');
     return user && typeof user.id === 'string' && typeof user.name === 'string'
       && ['admin', 'employee'].includes(user.role) ? user : null;
   } catch {
@@ -21,7 +21,7 @@ export function AuthProvider({ children }) {
   const setUser = useCallback((nextUser) => {
     setUserState(nextUser);
     if (nextUser) {
-      try { window.localStorage.setItem('user', JSON.stringify(nextUser)); } catch {}
+      try { window.sessionStorage.setItem('user', JSON.stringify(nextUser)); } catch {}
     }
   }, []);
 

@@ -8,11 +8,17 @@ import Settings from '../src/models/Settings.js';
 import { requireSetupOpen, setupStatus } from '../src/controllers/authController.js';
 
 test('access and refresh JWTs have distinct purpose and refresh token is cookie-only', () => {
-  const user = { id: '507f1f77bcf86cd799439011', role: 'admin' };
+  const user = { id: '507f1f77bcf86cd799439011', role: 'admin', email: 'admin@example.test' };
   const access = jwt.decode(createAccessToken(user));
   const refresh = jwt.decode(createRefreshToken(user));
   assert.equal(access.type, undefined);
+  assert.equal(access.id, user.id);
+  assert.equal(access.role, user.role);
+  assert.equal(access.email, user.email);
   assert.equal(refresh.type, 'refresh');
+  assert.equal(refresh.id, user.id);
+  assert.equal(refresh.role, user.role);
+  assert.equal(refresh.email, user.email);
   assert.equal(refresh.sub, user.id);
   assert.equal(refreshCookieOptions.httpOnly, true);
   assert.equal(access.exp - access.iat, 15 * 60);

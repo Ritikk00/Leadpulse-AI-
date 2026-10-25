@@ -7,7 +7,7 @@ export const api = axios.create({
 });
 
 function readStoredToken() {
-  try { return window.localStorage.getItem('token'); }
+  try { return window.sessionStorage.getItem('token'); }
   catch { return null; }
 }
 
@@ -16,15 +16,15 @@ export const getAccessToken = () => accessToken;
 export const setAccessToken = (token) => {
   accessToken = token;
   if (token) {
-    try { window.localStorage.setItem('token', token); } catch {}
+    try { window.sessionStorage.setItem('token', token); } catch {}
   }
 };
 
 export function clearStoredSession() {
   setAccessToken(null);
   try {
-    window.localStorage.removeItem('token');
-    window.localStorage.removeItem('user');
+    window.sessionStorage.removeItem('token');
+    window.sessionStorage.removeItem('user');
   } catch {}
 }
 

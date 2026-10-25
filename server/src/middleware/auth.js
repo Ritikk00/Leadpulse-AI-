@@ -10,8 +10,11 @@ export async function requireAuth(req, _res, next) {
     if (!token) throw new AppError(401, 'Sign in to continue.');
     const payload = jwt.verify(token, env.JWT_ACCESS_SECRET, { issuer: 'ai-lead-starter' });
     if (payload.type === 'refresh') throw new AppError(401, 'Use an access token for this request.');
-    const user = await User.findById(payload.sub).select('name email role +tokenVersion');
-    if (!user || (payload.tokenVersion || 0) !== (user.tokenVersion || 0)) throw new AppError(401, 'This session is no longer valid.');
+    const user = await User.findById(payload.id || payload.sub).select('name email role +tokenVersion');
+    if (!user || (payload.tokenVersion || 0) !== (user.tokenVersion || 0)
+      || payload.role !== user.role || payload.email !== user.email) {
+      throw new AppError(401, 'This session is no longer valid.');
+    }
     req.user = user;
     next();
   } catch (error) {
