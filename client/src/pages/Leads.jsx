@@ -22,6 +22,7 @@ export function Leads() {
   const [updatingId, setUpdatingId] = useState('');
   const [assignmentIds, setAssignmentIds] = useState([]);
   const [awaitingActionCount, setAwaitingActionCount] = useState(0);
+  const [assignmentRefresh, setAssignmentRefresh] = useState(0);
 
   useEffect(() => {
     api.get('/leads/meta').then(({ data }) => setSources(data.data.sources)).catch((requestError) => {
@@ -60,7 +61,7 @@ export function Leads() {
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [filters, notifications, page]);
+  }, [assignmentRefresh, filters, notifications, page]);
 
   useEffect(() => {
     if (user?.role !== 'employee') return undefined;
@@ -81,6 +82,8 @@ export function Leads() {
         if (newIds.length) {
           setAssignmentIds((current) => [...new Set([...current.filter((id) => currentIds.has(id)), ...newIds])]);
           notifications.info(`${newIds.length} new ${newIds.length === 1 ? 'lead has' : 'leads have'} been assigned to you.`);
+          setLoading(true);
+          setAssignmentRefresh((current) => current + 1);
         }
         previousIds = currentIds;
         initialized = true;

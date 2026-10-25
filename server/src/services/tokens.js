@@ -18,14 +18,14 @@ export function createRefreshToken(user) {
   return jwt.sign({ role: user.role, type: 'refresh', nonce: randomUUID() }, env.JWT_REFRESH_SECRET, {
     subject: user.id,
     issuer: 'ai-lead-starter',
-    expiresIn: env.REFRESH_TOKEN_TTL // Yahan direct REFRESH_TOKEN_TTL ('15d') aayega
+    expiresIn: env.REFRESH_TOKEN_TTL
   });
 }
 
 export const refreshCookieOptions = {
   httpOnly: true,
-  secure: env.NODE_ENV === 'production',
-  sameSite: 'strict',
+  secure: env.NODE_ENV === 'production' || env.REFRESH_COOKIE_SAME_SITE === 'none',
+  sameSite: env.REFRESH_COOKIE_SAME_SITE,
   path: '/api/auth',
-  maxAge: 15 * 24 * 60 * 60 * 1000 // Direct 15 din milliseconds me
+  maxAge: 15 * 24 * 60 * 60 * 1000
 };

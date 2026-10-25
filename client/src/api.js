@@ -6,8 +6,27 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' }
 });
 
-let accessToken = null;
-export const setAccessToken = (token) => { accessToken = token; };
+function readStoredToken() {
+  try { return window.localStorage.getItem('token'); }
+  catch { return null; }
+}
+
+let accessToken = readStoredToken();
+export const getAccessToken = () => accessToken;
+export const setAccessToken = (token) => {
+  accessToken = token;
+  if (token) {
+    try { window.localStorage.setItem('token', token); } catch {}
+  }
+};
+
+export function clearStoredSession() {
+  setAccessToken(null);
+  try {
+    window.localStorage.removeItem('token');
+    window.localStorage.removeItem('user');
+  } catch {}
+}
 
 let refreshRequest;
 export function refreshAccessToken() {
@@ -27,8 +46,8 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use((response) => response, async (error) => {
   const original = error.config;
-  const isAuthRequest = original?.url?.startsWith('/auth/');
-  if (error.response?.status !== 401 || original?._retry || isAuthRequest) throw error;
+  const isSessionRequest = /\/auth\/(?:login|setup|register|refresh|logout|forgot-password|reset-password)(?:\?|$)/.test(original?.url || '');
+  if (error.response?.status !== 401 || original?._retry || isSessionRequest) throw error;
   original._retry = true;
   try {
     const session = await refreshAccessToken();

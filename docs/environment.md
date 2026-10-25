@@ -13,6 +13,7 @@ The API loads `server/.env` via dotenv. The root `.env.example` mirrors the serv
 | `JWT_REFRESH_SECRET` | Yes | Separate random secret, minimum 32 characters. |
 | `ACCESS_TOKEN_TTL` | No | JWT duration, defaults to `15m`. |
 | `REFRESH_TOKEN_TTL` | No | Refresh JWT duration, defaults to `15d`; the cookie lifetime is fixed at 15 days. |
+| `REFRESH_COOKIE_SAME_SITE` | No | `none` for cross-site frontend/API deployments (requires HTTPS); defaults to `lax` locally and `none` in production. Use `lax` when frontend and API share a site. |
 | `GROQ_API_KEY` | Only for AI | Groq API key. Server only; never add it to a `VITE_*` variable. Legacy `OPENAI_API_KEY` is accepted as a migration fallback. |
 | `EMAIL_HOST` | Only for email | SMTP hostname; defaults to `smtp.gmail.com`. Legacy `SMTP_HOST` is supported. |
 | `EMAIL_PORT` | Only for email | SMTP port; defaults to `465`. Legacy `SMTP_PORT` is supported. |

@@ -28,6 +28,7 @@ const envSchema = z.object({
   EMAIL_PASS: z.string().optional().default(process.env.SMTP_PASSWORD || ''),
   EMAIL_FROM: z.string().optional().default(process.env.SMTP_FROM || ''),
   EMAIL_TLS_REJECT_UNAUTHORIZED: z.enum(['true', 'false']).optional().default('true').transform((value) => value === 'true'),
+  REFRESH_COOKIE_SAME_SITE: z.enum(['strict', 'lax', 'none']).optional().default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
   ADMIN_NOTIFICATION_EMAIL: z.string().email().optional().or(z.literal('')),
   LEAD_ACKNOWLEDGEMENT_ENABLED: z.string().default('false'),
   WEBHOOK_SECRET: z.string().optional().default('')

@@ -93,23 +93,25 @@ export async function refresh(req, res) {
     throw new AppError(401, 'Refresh session is no longer valid. Sign in again.');
   }
 
-  // NOTE: Token rotation removed so the original 2-minute refresh expiry remains fixed.
-  // Sirf naya access token bhej rahe hain:
+  // Keep the refresh token's original 15-day expiry fixed; only renew the access token.
   res.json({ success: true, data: { user: publicUser(user), accessToken: createAccessToken(user) } });
 }
 
 export async function logout(req, res) {
   const token = req.cookies.refreshToken;
-  if (token) {
-    const digest = hashToken(token);
-    const user = await User.findOne({ refreshTokenHash: digest }).select('+refreshTokenHash +tokenVersion');
-    if (user) {
-      user.refreshTokenHash = null;
-      user.tokenVersion = (user.tokenVersion || 0) + 1;
-      await user.save();
+  try {
+    if (token) {
+      const digest = hashToken(token);
+      const user = await User.findOne({ refreshTokenHash: digest }).select('+refreshTokenHash +tokenVersion');
+      if (user) {
+        user.refreshTokenHash = null;
+        user.tokenVersion = (user.tokenVersion || 0) + 1;
+        await user.save();
+      }
     }
+  } finally {
+    clearRefreshCookie(res);
   }
-  clearRefreshCookie(res);
   res.json({ success: true, data: { message: 'Signed out.' } });
 }
 

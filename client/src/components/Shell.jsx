@@ -2,6 +2,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Activity, ArrowUpRight, BookOpenText, ChevronDown, CircleHelp, Command, LayoutDashboard, LogOut, Menu, Settings as SettingsIcon, UsersRound, X } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../auth/useAuth';
+import { useToast } from './useToast';
 
 const navItems = [
   { to: '/app', label: 'Overview', icon: LayoutDashboard, end: true },
@@ -13,6 +14,7 @@ const navItems = [
 
 export function Shell() {
   const { user, logout } = useAuth();
+  const notifications = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
@@ -21,8 +23,13 @@ export function Shell() {
   const current = visibleNavItems.find((item) => item.end ? location.pathname === item.to : location.pathname.startsWith(item.to)) || (location.pathname === '/app/profile' ? { label: 'Profile' } : null);
 
   async function handleLogout() {
-    await logout();
-    navigate('/portal/login');
+    try {
+      await logout();
+    } catch (error) {
+      notifications.error(error.response?.data?.message || 'Could not confirm sign out with the server.');
+    } finally {
+      navigate('/portal/login');
+    }
   }
 
   return <div className="workspace">

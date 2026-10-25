@@ -15,8 +15,10 @@ test('access and refresh JWTs have distinct purpose and refresh token is cookie-
   assert.equal(refresh.type, 'refresh');
   assert.equal(refresh.sub, user.id);
   assert.equal(refreshCookieOptions.httpOnly, true);
-  assert.equal(refreshCookieOptions.sameSite, 'strict');
-  assert.equal(refreshCookieOptions.secure, process.env.NODE_ENV === 'production');
+  assert.equal(access.exp - access.iat, 15 * 60);
+  assert.equal(refresh.exp - refresh.iat, 15 * 24 * 60 * 60);
+  assert.equal(refreshCookieOptions.sameSite, process.env.NODE_ENV === 'production' ? 'none' : 'lax');
+  assert.equal(refreshCookieOptions.secure, process.env.NODE_ENV === 'production' || refreshCookieOptions.sameSite === 'none');
   assert.notEqual(hashToken(createRefreshToken(user)), hashToken(createRefreshToken(user)));
 });
 

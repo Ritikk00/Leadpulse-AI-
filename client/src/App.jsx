@@ -12,11 +12,13 @@ import { LeadDetail } from './pages/LeadDetail';
 import { Settings, Profile } from './pages/Settings';
 import { ApiDocs } from './pages/ApiDocs';
 import { Team } from './pages/Team';
+import { Button } from './components/ui';
 
 function ProtectedApp() {
-  const { user, loading } = useAuth();
+  const { user, loading, authCheckError, retrySessionCheck } = useAuth();
   const location = useLocation();
   if (loading) return <div className="screen-loading"><span className="spinner" /> Preparing your workspace</div>;
+  if (authCheckError) return <div className="screen-loading"><div><p>Could not verify your session. Check your connection and try again.</p><Button onClick={retrySessionCheck}>Try again</Button></div></div>;
   if (!user) return <Navigate to="/portal/login" replace />;
   if (user.role === 'employee' && location.pathname === '/app') return <Navigate to="/app/leads" replace />;
   if (user.role !== 'admin' && ['/app/settings', '/app/api-docs', '/app/team'].includes(location.pathname)) return <Navigate to="/app/leads" replace />;
