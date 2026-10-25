@@ -28,10 +28,10 @@
 
 ## Email is not delivered
 
-- Configure all SMTP fields (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`) and validate provider sender/domain policies.
+- Configure `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_SECURE`, `EMAIL_USER`, `EMAIL_PASS`, and `EMAIL_FROM` and validate provider sender/domain policies. The server verifies SMTP on startup; check Render logs for `[SMTP]` readiness or `[SMTP Error]` details. Legacy `SMTP_*` variables remain supported.
 - Admin alerts additionally need `ADMIN_NOTIFICATION_EMAIL` and the workspace's **New lead email alerts** setting enabled.
 - Lead acknowledgements require the workspace setting or environment fallback to be enabled.
-- The app logs notification failures server-side without failing lead creation. Follow-up response `sent: false` means SMTP is not configured.
+- The app logs notification failures server-side without failing lead creation. Follow-up webhooks return HTTP 202 while email delivery runs in the background.
 
 ## n8n reports unauthorized or cannot reach API
 

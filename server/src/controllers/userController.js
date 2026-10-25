@@ -20,7 +20,13 @@ export async function createEmployee(req, res) {
   const employee = await User.create({ name, email, role: 'employee', passwordHash: await bcrypt.hash(temporaryPassword, 12) });
   const newEmployee = { id: String(employee._id), name: employee.name, email: employee.email, role: employee.role, createdAt: employee.createdAt };
   res.status(201).json({ success: true, data: { employee: newEmployee } });
-  sendEmployeeWelcome(employee, temporaryPassword).catch((error) => console.error('Email failed:', error));
+  sendEmployeeWelcome(employee, temporaryPassword).catch((error) => {
+    console.error('[SMTP Error]: Employee welcome dispatch failed.', {
+      code: error?.code,
+      response: error?.response,
+      message: error?.message
+    }, error);
+  });
 }
 
 export async function deleteEmployee(req, res) {

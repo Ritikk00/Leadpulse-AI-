@@ -30,6 +30,7 @@ Base path: `/api`. JSON success responses use `{ "success": true, "data": ... }`
 | `PATCH` | `/leads/:id` | Access token | Update allowed lead fields/status/priority |
 | `PATCH` | `/leads/:id/assign` | Admin | Assign a lead to an employee or pass `employeeId: null` to unassign |
 | `GET` | `/leads/status-updates?since=<ISO timestamp>` | Admin | Poll employee status changes to Contacted |
+| `POST` | `/webhooks/follow-up` | Webhook secret | Dispatch a follow-up email in the background; returns HTTP 202 before SMTP completes |
 | `DELETE` | `/leads/:id` | Admin | Delete lead and history |
 | `POST` | `/leads/:id/analyze` | Access token | Call configured AI provider and validate result |
 | `POST` | `/leads/:id/activities` | Access token | Add an activity note |

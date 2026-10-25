@@ -3,9 +3,11 @@ import app from './app.js';
 import { env } from './config/env.js';
 import Lead from './models/Lead.js';
 import User from './models/User.js';
+import { verifyEmailTransport } from './services/emailService.js';
 
 app.locals.databaseInitialized = false;
 const server = app.listen(env.PORT, () => console.log(`[server] API ready at http://127.0.0.1:${env.PORT}`));
+verifyEmailTransport();
 
 async function connectToDatabase() {
   while (mongoose.connection.readyState !== 1) {

@@ -120,7 +120,13 @@ export async function forgotPassword(req, res) {
     user.resetTokenHash = createHash('sha256').update(token).digest('hex');
     user.resetTokenExpiresAt = new Date(Date.now() + 30 * 60 * 1000);
     await user.save();
-    await sendPasswordReset(user, token);
+    sendPasswordReset(user, token).catch((error) => {
+      console.error('[SMTP Error]: Password reset dispatch failed.', {
+        code: error?.code,
+        response: error?.response,
+        message: error?.message
+      }, error);
+    });
   }
   res.json({ success: true, data: { message: 'If an account exists for that email, reset instructions have been sent.' } });
 }

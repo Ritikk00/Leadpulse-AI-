@@ -6,6 +6,7 @@ const jwtSecretBase = process.env.JWT_SECRET || '';
 const deriveJwtSecret = (purpose) => jwtSecretBase
   ? createHash('sha256').update(`${jwtSecretBase}:leadpulse:${purpose}`).digest('hex')
   : '';
+const emailPort = Number(process.env.EMAIL_PORT || process.env.SMTP_PORT || 465);
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -20,11 +21,13 @@ const envSchema = z.object({
  REFRESH_TOKEN_TTL: z.string().default('15d'),
   GROQ_API_KEY: z.string().optional().default(process.env.OPENAI_API_KEY || ''),
   GROQ_BASE_URL: z.string().url().default('https://api.groq.com/openai/v1'),
-  SMTP_HOST: z.string().optional().default(''),
-  SMTP_PORT: z.coerce.number().int().positive().default(587),
-  SMTP_USER: z.string().optional().default(''),
-  SMTP_PASSWORD: z.string().optional().default(''),
-  SMTP_FROM: z.string().optional().default(''),
+  EMAIL_HOST: z.string().optional().default(process.env.SMTP_HOST || 'smtp.gmail.com'),
+  EMAIL_PORT: z.coerce.number().int().positive().default(emailPort),
+  EMAIL_SECURE: z.enum(['true', 'false']).optional().default(process.env.EMAIL_SECURE || String(emailPort === 465)).transform((value) => value === 'true'),
+  EMAIL_USER: z.string().optional().default(process.env.SMTP_USER || ''),
+  EMAIL_PASS: z.string().optional().default(process.env.SMTP_PASSWORD || ''),
+  EMAIL_FROM: z.string().optional().default(process.env.SMTP_FROM || ''),
+  EMAIL_TLS_REJECT_UNAUTHORIZED: z.enum(['true', 'false']).optional().default('true').transform((value) => value === 'true'),
   ADMIN_NOTIFICATION_EMAIL: z.string().email().optional().or(z.literal('')),
   LEAD_ACKNOWLEDGEMENT_ENABLED: z.string().default('false'),
   WEBHOOK_SECRET: z.string().optional().default('')

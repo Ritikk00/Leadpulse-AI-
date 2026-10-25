@@ -39,6 +39,20 @@ async function recordAutomaticQualificationFailure(lead, error) {
   }
 }
 
+function scheduleLeadEmailNotifications(lead, userId, source) {
+  setImmediate(() => {
+    Promise.resolve()
+      .then(async () => sendLeadNotifications(lead, await notificationSettings(userId)))
+      .catch((error) => {
+        console.error(`[SMTP Error]: ${source} lead notification failed.`, {
+          code: error?.code,
+          response: error?.response,
+          message: error?.message
+        }, error);
+      });
+  });
+}
+
 async function automaticallyQualify(lead) {
   let result;
   try {
@@ -119,7 +133,7 @@ export async function createLead(req, res) {
     createdBy: req.user._id
   });
   await activity(lead, req.user?._id, 'created', 'Lead created', { source: lead.source });
-  sendLeadNotifications(lead, await notificationSettings(req.user?._id)).catch((error) => console.error('Lead email notification failed:', error.message));
+  scheduleLeadEmailNotifications(lead, req.user?._id, 'Lead');
   res.status(201).json({ success: true, data: { lead: responseLead(lead) } });
 }
 
@@ -143,7 +157,7 @@ export async function inquireLead(req, res) {
     await activity(lead, null, 'assigned', `Auto-assigned to ${assignedEmployee.name} via Round-Robin`, { assignedTo: assignedEmployee._id });
   }
   await activity(lead, null, 'ai_analyzed', 'AI qualification completed', { score: result.score, priority: result.priority });
-  sendLeadNotifications(lead, await notificationSettings(null)).catch((error) => console.error('Lead email notification failed:', error.message));
+  scheduleLeadEmailNotifications(lead, null, 'Public intake');
   const savedLead = responseLead(lead);
   delete savedLead.trackingCodeHash;
   res.status(201).json({ success: true, data: { lead: savedLead, trackingReference } });
@@ -319,7 +333,7 @@ export async function createWebhookLead(req, res) {
   await activity(lead, null, 'webhook', 'Lead received via webhook', { source: lead.source });
   const webhookLeadResponse = responseLead(lead);
   scheduleAutomaticQualification(lead);
-  sendLeadNotifications(lead, await notificationSettings(null)).catch((error) => console.error('Webhook lead email failed:', error.message));
+  scheduleLeadEmailNotifications(lead, null, 'Webhook');
   res.status(201).json({ success: true, data: { lead: webhookLeadResponse } });
 }
 
@@ -344,9 +358,22 @@ export async function webhookFollowUp(req, res) {
   }
   const lead = await Lead.findById(leadId);
   if (!lead) throw new AppError(404, 'Lead not found.');
-  const delivery = await sendFollowUp(lead, message.trim());
-  await activity(lead, null, 'webhook', delivery.sent ? 'Follow-up email sent via webhook' : 'Follow-up requested; email provider is not configured', { sent: delivery.sent });
-  res.json({ success: true, data: { delivery } });
+  res.status(202).json({ success: true, data: { delivery: { sent: false, pending: true } } });
+  sendFollowUp(lead, message.trim())
+    .then((delivery) => activity(
+      lead,
+      null,
+      'webhook',
+      delivery.sent ? 'Follow-up email sent via webhook' : 'Follow-up email could not be sent via webhook',
+      { sent: delivery.sent }
+    ))
+    .catch((error) => {
+      console.error('[SMTP Error]: Follow-up dispatch failed.', {
+        code: error?.code,
+        response: error?.response,
+        message: error?.message
+      }, error);
+    });
 }
 
 export async function webhookAnalyzeLead(req, res) {

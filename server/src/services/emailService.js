@@ -4,7 +4,7 @@ import { env } from '../config/env.js';
 let transporter;
 
 function sender() {
-  const address = env.SMTP_FROM.match(/<([^<>]+)>/)?.[1] || env.SMTP_FROM.trim();
+  const address = env.EMAIL_FROM.match(/<([^<>]+)>/)?.[1] || env.EMAIL_FROM.trim();
   return { name: 'LeadPulse AI', address };
 }
 
@@ -13,23 +13,62 @@ function brandedMessage(message) {
 }
 
 function getTransporter() {
-  if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASSWORD || !env.SMTP_FROM) return null;
+  if (!env.EMAIL_HOST || !env.EMAIL_USER || !env.EMAIL_PASS || !env.EMAIL_FROM) return null;
   transporter ||= nodemailer.createTransport({
-    host: env.SMTP_HOST,
-    port: env.SMTP_PORT,
-    secure: env.SMTP_PORT === 465,
-    auth: { user: env.SMTP_USER, pass: env.SMTP_PASSWORD }
+    host: env.EMAIL_HOST,
+    port: env.EMAIL_PORT,
+    secure: env.EMAIL_SECURE,
+    auth: { user: env.EMAIL_USER, pass: env.EMAIL_PASS },
+    tls: { rejectUnauthorized: env.EMAIL_TLS_REJECT_UNAUTHORIZED },
+    connectionTimeout: 10000,
+    greetingTimeout: 5000,
+    socketTimeout: 15000
   });
   return transporter;
 }
 
+function logEmailError(operation, error) {
+  console.error('[SMTP Error]:', {
+    operation,
+    code: error?.code,
+    response: error?.response,
+    message: error?.message
+  }, error);
+}
+
+async function dispatchEmail(operation, options) {
+  try {
+    const mailer = getTransporter();
+    if (!mailer) return { sent: false, reason: 'Email is not configured.' };
+    await mailer.sendMail(options);
+    return { sent: true };
+  } catch (error) {
+    logEmailError(operation, error);
+    return { sent: false, reason: 'Email could not be sent.' };
+  }
+}
+
+export async function verifyEmailTransport() {
+  try {
+    const mailer = getTransporter();
+    if (!mailer) {
+      console.log('[SMTP] Email is not configured; delivery is disabled.');
+      return false;
+    }
+    await mailer.verify();
+    console.log('[SMTP] Transporter is ready');
+    return true;
+  } catch (error) {
+    logEmailError('transporter verification', error);
+    return false;
+  }
+}
+
 export async function sendLeadNotifications(lead, settings = {}) {
-  const mailer = getTransporter();
-  if (!mailer) return { sent: false, reason: 'SMTP is not configured.' };
   const tasks = [];
   const adminEmail = settings.adminNotificationEmail || env.ADMIN_NOTIFICATION_EMAIL;
   if (adminEmail && settings.adminNotifications !== false) {
-    tasks.push(mailer.sendMail({
+    tasks.push(dispatchEmail('lead notification', {
       from: sender(),
       to: adminEmail,
       subject: `LeadPulse AI | New lead: ${lead.name}`,
@@ -37,51 +76,45 @@ export async function sendLeadNotifications(lead, settings = {}) {
     }));
   }
   if (settings.acknowledgementEnabled && lead.email) {
-    tasks.push(mailer.sendMail({
+    tasks.push(dispatchEmail('lead acknowledgement', {
       from: sender(),
       to: lead.email,
       subject: 'LeadPulse AI | We received your request',
       text: brandedMessage(`Hi ${lead.name},\n\nThanks for getting in touch. Our team will review your request and follow up soon.`)
     }));
   }
-  await Promise.all(tasks);
-  return { sent: tasks.length > 0 };
+  const results = await Promise.all(tasks);
+  return {
+    sent: results.some((result) => result.sent),
+    ...(!results.some((result) => result.sent) && results.length ? { reason: results.find((result) => result.reason)?.reason } : {})
+  };
 }
 
 export async function sendFollowUp(lead, message) {
-  const mailer = getTransporter();
-  if (!mailer) return { sent: false, reason: 'SMTP is not configured.' };
-  await mailer.sendMail({
+  return dispatchEmail('follow-up', {
     from: sender(),
     to: lead.email,
     subject: 'LeadPulse AI | Following up on your request',
     text: brandedMessage(message)
   });
-  return { sent: true };
 }
 
 export async function sendPasswordReset(user, token) {
-  const mailer = getTransporter();
-  if (!mailer) return { sent: false, reason: 'SMTP is not configured.' };
   const resetUrl = `${env.CLIENT_URL.replace(/\/$/, '')}/reset-password?token=${encodeURIComponent(token)}`;
-  await mailer.sendMail({
+  return dispatchEmail('password reset', {
     from: sender(),
     to: user.email,
     subject: 'LeadPulse AI | Reset your password',
     text: brandedMessage(`Hi ${user.name},\n\nUse this one-time link within 30 minutes to reset your password:\n${resetUrl}`)
   });
-  return { sent: true };
 }
 
 export async function sendEmployeeWelcome(user, temporaryPassword) {
-  const mailer = getTransporter();
-  if (!mailer) return { sent: false, reason: 'SMTP is not configured.' };
   const loginUrl = `${env.CLIENT_URL.replace(/\/$/, '')}/portal/login`;
-  await mailer.sendMail({
+  return dispatchEmail('employee welcome', {
     from: sender(),
     to: user.email,
     subject: 'LeadPulse AI | Your team portal account',
     text: brandedMessage(`Hi ${user.name},\n\nYour LeadPulse AI team portal account is ready.\n\nEmail: ${user.email}\nTemporary password: ${temporaryPassword}\nPortal login: ${loginUrl}\n\nPlease change your password after signing in.`)
   });
-  return { sent: true };
 }
